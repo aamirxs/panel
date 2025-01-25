@@ -1,0 +1,131 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Task Manager{% endblock %}
+{% block header %}Task Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Create Task</h3>
+            </div>
+            <div class="card-body">
+                <form id="taskForm">
+                    <div class="form-group">
+                        <label>Task Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Command</label>
+                        <input type="text" class="form-control" name="command" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Schedule</label>
+                        <select class="form-control" name="schedule">
+                            <option value="15 minutes">Every 15 minutes</option>
+                            <option value="1 hours">Every hour</option>
+                            <option value="12 hours">Every 12 hours</option>
+                            <option value="1 days">Daily</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Scheduled Tasks</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Command</th>
+                                <th>Schedule</th>
+                                <th>Last Run</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>{{ task.name }}</td>
+                                <td><code>{{ task.command }}</code></td>
+                                <td>{{ task.schedule }}</td>
+                                <td>{{ task.last_run or 'Never' }}</td>
+                                <td>
+                                    <span class="badge badge-{{ 'success' if task.status == 'success' else 'danger' }}">
+                                        {{ task.status or 'Pending' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" onclick="viewOutput({{ task.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Output Modal -->
+<div class="modal fade" id="outputModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Task Output</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <pre id="taskOutput"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('taskForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/api/task', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Task creation failed: ' + data.error);
+        }
+    });
+});
+
+function viewOutput(taskId) {
+    fetch(`/api/task/${taskId}/output`)
+        .then(response => response.text())
+        .then(output => {
+            document.getElementById('taskOutput').textContent = output;
+            $('#outputModal').modal('show');
+        });
+}
+</script>
+{% endblock %} 

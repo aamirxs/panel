@@ -1,0 +1,88 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Backup Manager{% endblock %}
+{% block header %}Backup Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Create Backup</h3>
+            </div>
+            <div class="card-body">
+                <form id="backupForm" class="form-inline">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="name" placeholder="Backup name (optional)">
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Create Backup
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Backup History</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                            <tr>
+                                <td>{{ backup.name }}</td>
+                                <td>{{ (backup.size / 1024 / 1024)|round(2) }} MB</td>
+                                <td>{{ backup.created.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <a href="{{ url_for('download_backup', filename=backup.name) }}" 
+                                       class="btn btn-sm btn-info">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('backupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/api/backup', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Backup failed: ' + data.message);
+        }
+    });
+});
+</script>
+{% endblock %} 

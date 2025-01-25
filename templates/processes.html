@@ -1,0 +1,232 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Process Manager{% endblock %}
+{% block header %}Process Manager{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">Running Processes</h3>
+        <div class="card-tools d-flex align-items-center">
+            <button class="btn btn-tool mr-2" onclick="refreshProcesses()">
+                <i class="fas fa-sync"></i>
+            </button>
+            <div class="input-group input-group-sm" style="width: 250px;">
+                <input type="text" class="form-control" id="processSearch" placeholder="Search processes...">
+                <div class="input-group-append">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="processTable">
+                <thead>
+                    <tr>
+                        <th>PID</th>
+                        <th>Name</th>
+                        <th>CPU %</th>
+                        <th>Memory %</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proc in processes %}
+                    <tr data-pid="{{ proc.pid }}">
+                        <td>{{ proc.pid }}</td>
+                        <td>{{ proc.name }}</td>
+                        <td class="cpu-usage">{{ proc.cpu }}%</td>
+                        <td class="memory-usage">{{ proc.memory }}%</td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if proc.status == 'running' else 'warning' }}">
+                                {{ proc.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-danger" 
+                                        onclick="manageProcess({{ proc.pid }}, 'stop')"
+                                        title="Stop Process">
+                                    <i class="fas fa-stop"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning" 
+                                        onclick="manageProcess({{ proc.pid }}, 'restart')"
+                                        title="Restart Process">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                <button class="btn btn-sm btn-info" 
+                                        onclick="viewProcessDetails({{ proc.pid }})"
+                                        title="View Details">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <small class="text-muted">Total Processes: <span id="processCount">{{ processes|length }}</span></small>
+    </div>
+</div>
+
+<!-- Process Details Modal -->
+<div class="modal fade" id="processModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Process Details</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="processDetails"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let refreshTimer;
+
+function manageProcess(pid, action) {
+    if (confirm(`Are you sure you want to ${action} process ${pid}?`)) {
+        const button = event.target.closest('button');
+        button.disabled = true;
+        
+        fetch(`/api/process/${pid}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=${action}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', `Process ${action}ed successfully`);
+                refreshProcesses();
+            } else {
+                showToast('error', 'Error: ' + data.error);
+                button.disabled = false;
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Error: ' + error);
+            button.disabled = false;
+        });
+    }
+}
+
+function viewProcessDetails(pid) {
+    fetch(`/api/process/${pid}/details`)
+        .then(response => response.json())
+        .then(data => {
+            const details = `
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tr><th>PID</th><td>${data.pid}</td></tr>
+                        <tr><th>Name</th><td>${data.name}</td></tr>
+                        <tr><th>Username</th><td>${data.username}</td></tr>
+                        <tr><th>Created</th><td>${data.create_time}</td></tr>
+                        <tr><th>Command Line</th><td><code>${data.cmdline}</code></td></tr>
+                        <tr><th>Working Directory</th><td>${data.cwd}</td></tr>
+                        <tr><th>Memory Usage</th><td>${data.memory_info}</td></tr>
+                        <tr><th>Open Files</th><td>${data.open_files}</td></tr>
+                        <tr><th>Threads</th><td>${data.num_threads}</td></tr>
+                    </table>
+                </div>
+            `;
+            document.getElementById('processDetails').innerHTML = details;
+            $('#processModal').modal('show');
+        })
+        .catch(error => showToast('error', 'Error fetching process details'));
+}
+
+function refreshProcesses() {
+    fetch('/api/processes')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector('#processTable tbody');
+            tbody.innerHTML = data.processes.map(proc => `
+                <tr data-pid="${proc.pid}">
+                    <td>${proc.pid}</td>
+                    <td>${proc.name}</td>
+                    <td class="cpu-usage">${proc.cpu}%</td>
+                    <td class="memory-usage">${proc.memory}%</td>
+                    <td>
+                        <span class="badge badge-${proc.status === 'running' ? 'success' : 'warning'}">
+                            ${proc.status}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-danger" onclick="manageProcess(${proc.pid}, 'stop')" title="Stop Process">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="manageProcess(${proc.pid}, 'restart')" title="Restart Process">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="viewProcessDetails(${proc.pid})" title="View Details">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            document.getElementById('processCount').textContent = data.processes.length;
+        })
+        .catch(error => showToast('error', 'Error refreshing processes'));
+}
+
+function showToast(type, message) {
+    const toast = `
+        <div class="toast bg-${type === 'error' ? 'danger' : 'success'}" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 1050;">
+            <div class="toast-body text-white">
+                ${message}
+            </div>
+        </div>
+    `;
+    const toastElement = $(toast);
+    $('body').append(toastElement);
+    toastElement.toast({ delay: 3000 }).toast('show');
+    toastElement.on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
+}
+
+// Process search functionality
+document.getElementById('processSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#processTable tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const visible = text.includes(searchTerm);
+        row.style.display = visible ? '' : 'none';
+        if (visible) visibleCount++;
+    });
+    
+    document.getElementById('processCount').textContent = visibleCount;
+});
+
+// Auto-refresh processes every 30 seconds
+refreshTimer = setInterval(refreshProcesses, 30000);
+
+// Clear interval when leaving the page
+window.addEventListener('beforeunload', () => {
+    clearInterval(refreshTimer);
+});
+</script>
+{% endblock %} 

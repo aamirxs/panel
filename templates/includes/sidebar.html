@@ -1,0 +1,54 @@
+<aside class="main-sidebar sidebar-dark-primary elevation-4"></aside>
+    <a href="/" class="brand-link">
+        <span class="brand-text font-weight-light">Python Panel</span>
+    </a>
+
+    <div class="sidebar">
+        <nav class="mt-2">
+            <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                <li class="nav-item">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('file_manager') }}" class="nav-link">
+                        <i class="nav-icon fas fa-folder-open"></i>
+                        <p>File Manager</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('log_viewer') }}" class="nav-link">
+                        <i class="nav-icon fas fa-terminal"></i>
+                        <p>Log Viewer</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('system_monitor') }}" class="nav-link">
+                        <i class="nav-icon fas fa-server"></i>
+                        <p>System Monitor</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('process_manager') }}" class="nav-link">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>Process Manager</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('backup_manager') }}" class="nav-link">
+                        <i class="nav-icon fas fa-save"></i>
+                        <p>Backup Manager</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ url_for('task_manager') }}" class="nav-link">
+                        <i class="nav-icon fas fa-clock"></i>
+                        <p>Task Scheduler</p>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</aside>

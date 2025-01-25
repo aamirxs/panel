@@ -1,0 +1,114 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info">
+            <div class="inner">
+                <h3>{{ stats.cpu }}%</h3>
+                <p>CPU Usage</p>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" style="width: {{ stats.cpu }}%"></div>
+                </div>
+            </div>
+            <div class="icon">
+                <i class="fas fa-microchip"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>{{ stats.memory }}%</h3>
+                <p>Memory Usage</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-memory"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>{{ stats.disk }}%</h3>
+                <p>Disk Usage</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-hard-drive"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-primary">
+            <div class="inner">
+                <h3>{{ (stats.uptime / 3600)|round(1) }}</h3>
+                <p>Uptime (hours)</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">System Resources</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="resourceChart" style="height: 300px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ctx = document.getElementById('resourceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['CPU', 'Memory', 'Disk'],
+            datasets: [{
+                label: 'Usage (%)',
+                data: [{{ stats.cpu }}, {{ stats.memory }}, {{ stats.disk }}],
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+});
+
+function updateStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update stats display
+            document.getElementById('cpu-usage').textContent = data.cpu + '%';
+            // Update other stats...
+            
+            // Update chart
+            resourceChart.data.datasets[0].data = [data.cpu, data.memory, data.disk];
+            resourceChart.update();
+        });
+}
+
+setInterval(updateStats, 5000); // Update every 5 seconds
+</script>
+{% endblock %}

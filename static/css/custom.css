@@ -1,0 +1,31 @@
+.small-box {
+    transition: transform 0.2s;
+    border-radius: 0.25rem;
+}
+
+.small-box:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    background: rgba(255,255,255,0.05);
+}
+
+#resourceChart {
+    max-height: 400px;
+}
+
+.file-manager-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+.log-output {
+    background: #1a1a1a;
+    color: #00ff00;
+    font-family: monospace;
+    padding: 1rem;
+    height: 70vh;
+    overflow-y: auto;
+    border-radius: 0.25rem;
+}

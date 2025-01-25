@@ -1,0 +1,127 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}System Monitor{% endblock %}
+{% block header %}System Monitor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- System Overview -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-server mr-2"></i>System Overview
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Hostname:</strong> {{ info.hostname }}</p>
+                        <p><strong>Boot Time:</strong> {{ info.boot_time }}</p>
+                        <p><strong>CPU Cores:</strong> {{ info.cpu.cores }}</p>
+                        <p><strong>CPU Temperature:</strong> {{ info.cpu.temperature }}°C</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total Memory:</strong> {{ (info.memory.total / (1024**3))|round(2) }} GB</p>
+                        <p><strong>Total Disk:</strong> {{ (info.disk.total / (1024**3))|round(2) }} GB</p>
+                        <p><strong>Active Processes:</strong> {{ info.processes }}</p>
+                        <p><strong>Network Traffic:</strong> ↑{{ (info.network.bytes_sent / (1024**2))|round(2) }} MB | 
+                           ↓{{ (info.network.bytes_recv / (1024**2))|round(2) }} MB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Charts -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">CPU & Memory Usage</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="resourceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Network Traffic</h3>
+            </div>
+            <div class="card-body">
+                <canvas id="networkChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const resourceChart = new Chart(document.getElementById('resourceChart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'CPU Usage',
+            borderColor: 'rgb(75, 192, 192)',
+            data: []
+        }, {
+            label: 'Memory Usage',
+            borderColor: 'rgb(255, 99, 132)',
+            data: []
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+const networkChart = new Chart(document.getElementById('networkChart'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Bytes Sent',
+            borderColor: 'rgb(54, 162, 235)',
+            data: []
+        }, {
+            label: 'Bytes Received',
+            borderColor: 'rgb(255, 159, 64)',
+            data: []
+        }]
+    },
+    options: {
+        responsive: true
+    }
+});
+
+function updateCharts() {
+    fetch('/api/system/history')
+        .then(response => response.json())
+        .then(data => {
+            // Update charts with new data
+            resourceChart.data.labels = Array(data.cpu.length).fill('');
+            resourceChart.data.datasets[0].data = data.cpu;
+            resourceChart.data.datasets[1].data = data.memory;
+            resourceChart.update();
+
+            networkChart.data.labels = Array(data.network.length).fill('');
+            networkChart.data.datasets[0].data = data.network.map(n => n.sent);
+            networkChart.data.datasets[1].data = data.network.map(n => n.recv);
+            networkChart.update();
+        });
+}
+
+setInterval(updateCharts, 5000);
+</script>
+{% endblock %} 
